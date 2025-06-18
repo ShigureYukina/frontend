@@ -1,6 +1,6 @@
 import axios from 'axios'
-import { useUserStore } from '@/store'
-import { ElMessage } from 'element-plus'
+import {useUserStore} from '@/store'
+import {ElMessage} from 'element-plus'
 
 const service = axios.create({
     baseURL: '/api',

@@ -3,8 +3,9 @@ import {useUserStore} from '@/store'
 
 const routes = [
     {path: '/', name: 'Home', component: () => import('@/views/Home.vue')},
-    {path: '/login', name: 'Login', component: () => import('@/views/LoginView.vue')},
-    {path: '/register', name: 'Register', component: () => import('@/views/RegisterView.vue')},
+    // 将登录和注册路由指向新的AuthView
+    {path: '/login', name: 'Login', component: () => import('@/views/AuthView.vue')},
+    {path: '/register', name: 'Register', component: () => import('@/views/AuthView.vue')},
     {path: '/recipe/:id', name: 'RecipeDetail', component: () => import('@/views/RecipeDetailView.vue'), props: true},
     {path: '/profile', name: 'Profile', component: () => import('@/views/ProfileView.vue'), meta: {requiresAuth: true}},
     {
@@ -20,6 +21,13 @@ const routes = [
         props: true, // 允许将路由参数作为 props 传递给组件
         meta: {requiresAuth: true}
     },
+    {
+        path: '/admin',
+        name: 'AdminPanel',
+        component: () => import('@/views/AdminPanel.vue'),
+        meta: { requiresAdmin: true } // 可配合路由守卫限制访问
+    }
+
 ]
 
 const router = createRouter({

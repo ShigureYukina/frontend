@@ -28,8 +28,8 @@
 
 <script setup>
 import { ref, onMounted, reactive } from 'vue'
-import { getUserInfo, getFavoriteRecipes, updateUserInfo } from '@/api'
-import { useUserStore } from '@/store'
+import { getUserInfo, getFavoriteRecipes, updateUserInfo } from '@/api/index.js'
+import { useUserStore } from '@/store/index.js'
 import RecipeList from '@/components/RecipeList.vue'
 
 const user = ref(null)
