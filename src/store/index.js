@@ -6,13 +6,14 @@ export const useUserStore = defineStore('user', {
         token: localStorage.getItem('satoken') || '',
         userId: localStorage.getItem('userId') || '',
         username: localStorage.getItem('username') || '',
-        isAdmin: localStorage.getItem('isAdmin') === 'true' || false,
+        isAdmin: localStorage.getItem('isAdmin') === '1' || false,
     }),
     actions: {
         login(data) {
             this.token = data.token
             this.userId = data.userId
             this.username = data.username
+            this.userRole = data.userRole
             localStorage.setItem('satoken', data.token)
             localStorage.setItem('userId', data.userId)
             localStorage.setItem('username', data.username)
@@ -21,8 +22,14 @@ export const useUserStore = defineStore('user', {
             this.token = ''
             this.userId = ''
             this.username = ''
-            this.isAdmin = false
+            this.userRole = null
             localStorage.clear()
+        },
+        updateUsername(newUsername) {
+            if (newUsername) {
+                this.username = newUsername
+                localStorage.setItem('username', newUsername)
+            }
         },
         async fetchUserInfo() {
             if (!this.userId) {
@@ -37,7 +44,6 @@ export const useUserStore = defineStore('user', {
                     this.username = user.username
                     localStorage.setItem('isAdmin', this.isAdmin.toString())
                     localStorage.setItem('username', this.username)
-                    console.log('isAdmin 设置为:', this.isAdmin)
                 } else {
                     this.isAdmin = false
                 }

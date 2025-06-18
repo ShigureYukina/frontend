@@ -1,5 +1,6 @@
 import request from './request'
 import axios from 'axios'
+import {ElMessage} from "element-plus";
 
 const postForm = (url, data) => {
     return axios.post(url, new URLSearchParams(data), {
@@ -41,6 +42,9 @@ export const updateState = (data) => request({
     method: 'post',
     data
 })
-export const review = (data) => request({url: '/review', method: 'post', data})
-
+export const review = (data) => request({
+    url: '/review',
+    method: 'post',
+    data
+});
 

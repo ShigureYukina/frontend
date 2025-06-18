@@ -100,7 +100,39 @@
               </el-button>
             </el-form>
 
-            <div v-if="reviews.length === 0" class="no-comments">暂无评论，快来抢沙发！</div>
+            <div v-if="reviews.length === 0" class="no-comments">暂无评论，快来抢沙发！</div><!-- 评论展示 -->
+            <div v-else>
+              <el-divider content-position="left">最新评论</el-divider>
+
+              <div
+                  v-for="(review, index) in reviews"
+                  :key="index"
+                  class="el-list-item"
+              >
+                <!-- 用户ID 显示为可点击链接 -->
+                <div class="el-list-item-meta__title">
+                  用户ID:
+                  <router-link :to="`/profile/${review.userId}`" style="color: #409EFF;">
+                    {{ review.userId || '匿名用户' }}
+                  </router-link>
+                </div>
+
+                <el-rate
+                    :model-value="review.rating"
+                    disabled
+                    size="small"
+                    style="margin: 4px 0"
+                />
+
+                <div class="el-list-item-meta__description">
+                  {{ formatDate(review.reviewTime) }}
+                </div>
+
+                <div class="review-content">
+                  {{ review.comment }}
+                </div>
+              </div>
+            </div>
 
 
           </el-card>
@@ -200,16 +232,23 @@ const submitReview = async () => {
   }
   loading.value = true
   try {
+    // **关键修复**: `review` 函数现在返回完整的响应数据
+    // res 的值将会是 {code: 200, message: null, data: 18}
     const res = await review(newReview.value)
-    if (res.code > 201) {
+
+    // **关键修复**: 判断条件改为 res.code === 200
+    if (res.code === 200) {
       ElMessage.success('评论成功')
       newReview.value.comment = ''
       newReview.value.rating = 5
+      // 成功后，重新获取菜谱详情以刷新评论区
       await fetchRecipe()
     } else {
-      ElMessage.error('评论提交失败')
+      // 如果后端code不是200，显示后端返回的错误信息
+      ElMessage.error(res.message || '评论提交失败')
     }
   } catch (e) {
+    // 处理网络层或request拦截器抛出的错误
     ElMessage.error('评论提交异常')
     console.error(e)
   } finally {
@@ -351,7 +390,6 @@ onMounted(async () => {
 .el-image:hover {
   transform: scale(1.02);
 }
-
 
 
 </style>

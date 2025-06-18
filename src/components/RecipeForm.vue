@@ -63,7 +63,7 @@ const fillTestData = () => {
   recipe.value.ingredients = '鸡蛋2个, 番茄1个, 盐适量, 油适量'
   recipe.value.difficulty = '简单'
   recipe.value.steps = `1. 番茄洗净切块；\n2. 鸡蛋打散加少许盐；\n3. 热锅冷油，炒鸡蛋至凝固盛出；\n4. 再炒番茄，加少许盐出汁；\n5. 倒入鸡蛋翻炒均匀即可`
-  recipe.value.recipeTypeNames = '家常菜, 快手菜'
+  recipe.value.recipeTypeNames = '家常菜'
   recipe.value.videoLink = 'https://www.w3schools.com/html/mov_bbb.mp4' // 示例视频
   recipe.value.imageLinks = [
     'https://cdn.pixabay.com/photo/2017/05/07/08/56/salad-2297011_1280.jpg',

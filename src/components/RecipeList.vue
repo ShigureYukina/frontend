@@ -3,16 +3,17 @@
     <div class="recipe-search-bar" v-if="!props.recipes">
       <el-input
           v-model="searchKeyword"
-          placeholder="搜索菜谱..."
-          @keyup.enter="fetchRecipes"
+          placeholder="按标题搜索..."
           clearable
           class="search-input"
       />
       <el-select
           v-model="searchType"
-          placeholder="选择类别"
-          @change="fetchRecipes"
+          placeholder="按类别筛选..."
           clearable
+          multiple
+          collapse-tags
+          collapse-tags-tooltip
           class="type-select"
       >
         <el-option
@@ -25,9 +26,10 @@
     </div>
 
     <el-row :gutter="20">
-      <template v-if="localRecipes.length > 0">
-        <el-col :xs="24" :sm="12" :md="8" :lg="6" v-for="item in localRecipes" :key="item.recipe.recipeID">
+      <template v-if="filteredRecipes.length > 0">
+        <el-col :xs="24" :sm="12" :md="8" :lg="6" v-for="item in filteredRecipes" :key="item.recipe.recipeID">
           <el-card class="recipe-card" shadow="hover" v-if="item && item.recipe">
+
             <el-image
                 :src="getFirstImage(item.recipe)"
                 fit="cover"
@@ -35,15 +37,22 @@
                 :preview-src-list="getImageList(item.recipe)"
                 lazy
             >
-              <template #placeholder><div class="image-slot">加载中...</div></template>
-              <template #error><div class="image-slot"><span>暂无图片</span></div></template>
+              <template #placeholder>
+                <div class="image-slot">加载中...</div>
+              </template>
+              <template #error>
+                <div class="image-slot"><span>暂无图片</span></div>
+              </template>
             </el-image>
 
             <div class="card-content">
               <h3 class="card-title">{{ item.recipe.title }}</h3>
               <div class="card-type-wrapper">
                 <template v-if="item.recipe.recipeTypeNames && typeof item.recipe.recipeTypeNames === 'string'">
-                  <el-tag size="small" v-for="tag in item.recipe.recipeTypeNames.split(',')" :key="tag" class="card-type-tag">{{ tag.trim() }}</el-tag>
+                  <el-tag size="small" v-for="tag in item.recipe.recipeTypeNames.split(',')" :key="tag"
+                          class="card-type-tag">
+                    {{ tag.trim() }}
+                  </el-tag>
                 </template>
               </div>
               <el-rate
@@ -54,21 +63,22 @@
                   score-template="{value} 分"
                   class="rate"
               />
-              <el-button type="primary" plain size="small" @click="goToDetail(item.recipe.recipeID)" class="detail-button">
+              <el-button type="primary" plain size="small" @click="goToDetail(item.recipe.recipeID)"
+                         class="detail-button">
                 查看详情
               </el-button>
             </div>
           </el-card>
         </el-col>
       </template>
-      <el-empty v-else description="暂无菜谱数据" style="width: 100%;"/>
+      <el-empty v-else description="没有找到匹配的菜谱" style="width: 100%;"/>
     </el-row>
   </div>
 </template>
 
 <script setup>
-import {ref, onMounted, watch} from 'vue';
-import {searchRecipes, getRecipeTypes} from '@/api';
+import {ref, onMounted, watch, computed} from 'vue';
+import {searchRecipes, getRecipeTypes, getRecipeDetail} from '@/api';
 import {useRouter} from "vue-router";
 
 const props = defineProps({
@@ -79,26 +89,37 @@ const props = defineProps({
 });
 
 const router = useRouter();
-const localRecipes = ref([]);
+const localRecipes = ref([]); // 存储从API获取的 *所有* 菜谱
 const recipeTypes = ref([]);
 const searchKeyword = ref('');
-const searchType = ref('');
+const searchType = ref([]); // 多选类别
 
 // --- 数据标准化函数 ---
-// 无论数据是扁平还是嵌套，都统一转换为 [{ recipe: {...} }, ...] 的格式
 const standardizeRecipes = (recipes) => {
-  if (!Array.isArray(recipes) || recipes.length === 0) {
-    return [];
-  }
-  // 如果第一个元素没有 'recipe' 属性，就认为是扁平的
-  if (recipes[0] && !recipes[0].recipe) {
-    return recipes.map(recipe => ({ recipe: recipe }));
-  }
-  // 否则，认为已经是嵌套结构
+  if (!Array.isArray(recipes) || recipes.length === 0) return [];
+  if (recipes[0] && !recipes[0].recipe) return recipes.map(recipe => ({recipe: recipe}));
   return recipes;
 };
 
+// --- 本地筛选逻辑 ---
+const filteredRecipes = computed(() => {
+  let recipesToFilter = localRecipes.value;
+  if (searchKeyword.value) {
+    recipesToFilter = recipesToFilter.filter(item =>
+        item.recipe.title.toLowerCase().includes(searchKeyword.value.toLowerCase())
+    );
+  }
+  if (searchType.value.length > 0) {
+    recipesToFilter = recipesToFilter.filter(item => {
+      if (typeof item.recipe.recipeTypeNames !== 'string') return false;
+      const types = item.recipe.recipeTypeNames.split(',').map(t => t.trim());
+      return searchType.value.some(selectedType => types.includes(selectedType));
+    });
+  }
+  return recipesToFilter;
+});
 
+// --- 图片处理函数 ---
 const getImageList = (recipe) => {
   const links = recipe?.imageLinks;
   if (typeof links !== 'string' || !links) return [];
@@ -107,27 +128,43 @@ const getImageList = (recipe) => {
 
 const getFirstImage = (recipe) => {
   const list = getImageList(recipe);
-  return list.length > 0 ? list[0] : '';
+  return list.length > 0 ? list[1] : '';
 };
 
-// 监听props的变化，并标准化数据
+
 watch(() => props.recipes, (newVal) => {
   localRecipes.value = standardizeRecipes(newVal);
 }, {immediate: true, deep: true});
 
 
+// --- **核心修改**: 通过API搜索并获取详细数据 ---
 const fetchRecipes = async () => {
   if (props.recipes) return;
-  const params = {
-    keyword: searchKeyword.value.trim() || '',
-    page: 1,
-    size: 12
-  };
   try {
-    const res = await searchRecipes(params);
-    localRecipes.value = standardizeRecipes(res.data);
+    // 1. 先获取简要菜谱列表（假设它返回的是扁平结构）
+    const res = await searchRecipes({page: 1, pagesize: 100});
+    const briefRecipes = res.data || [];
+
+    // 2. 使用 Promise.all 并行获取所有菜谱的详细信息
+    const detailPromises = briefRecipes.map(briefRecipe => {
+      // 假设 briefRecipe 包含 recipeID
+      const id = briefRecipe.recipeID;
+      if (!id) return Promise.resolve(null);
+      return getRecipeDetail(id).catch(e => {
+        console.error(`获取菜谱详情失败，ID: ${id}`, e);
+        return null; // 如果某个请求失败，返回null
+      });
+    });
+
+    const detailResults = await Promise.all(detailPromises);
+
+    // 3. 过滤掉失败的请求，并将详细数据保存到 localRecipes
+    localRecipes.value = detailResults
+        .filter(res => res && res.data && res.data.recipe) // 过滤掉null或无效数据
+        .map(res => ({ recipe: res.data.recipe })); // 统一为嵌套结构
+
   } catch (error) {
-    console.error("获取菜谱失败:", error);
+    console.error("获取菜谱列表失败:", error);
     localRecipes.value = [];
   }
 };
@@ -149,6 +186,8 @@ const goToDetail = (id) => {
 onMounted(() => {
   if (!props.recipes) {
     fetchRecipes();
+    fetchRecipeTypes();
+  } else {
     fetchRecipeTypes();
   }
 });
