@@ -61,7 +61,7 @@ onMounted(() => {
     <el-menu-item index="2" v-if="userStore.token">
       <router-link to="/create-recipe">创建菜谱</router-link>
     </el-menu-item>
-    <el-menu-item index="5" v-if="userStore.userRole==='1'">
+    <el-menu-item index="5" v-if="userStore.isAdmin">
       <router-link to="/admin">管理员面板</router-link>
     </el-menu-item>
 

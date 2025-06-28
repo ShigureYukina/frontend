@@ -78,6 +78,7 @@ const fetchUserInfo = async (userId) => {
       userStore.username = res.data.username
       userStore.userId = res.data.userId
       userStore.isAdmin = res.data.userRole === 1  // 假设1是管理员
+      console.log(res.data)
       localStorage.setItem('isAdmin', userStore.isAdmin)
       localStorage.setItem('username', userStore.username)
       localStorage.setItem('userId', userStore.userId)

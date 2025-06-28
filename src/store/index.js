@@ -38,13 +38,18 @@ export const useUserStore = defineStore('user', {
             }
             try {
                 const res = await getUserInfo(this.userId)
-                if (res.data && res.data.code === 200) {
-                    const user = res.data.data
-                    this.isAdmin = Number(user.userRole) === 1
+                console.log(res.data)
+                if (res.data && res.data.userRole === 1) {
+                    console.log(res.data)
+                    const user = res.data
+                    this.isAdmin = true
                     this.username = user.username
                     localStorage.setItem('isAdmin', this.isAdmin.toString())
                     localStorage.setItem('username', this.username)
+
+                    console.log(this.isAdmin)
                 } else {
+                    console.log("不是管理")
                     this.isAdmin = false
                 }
             } catch (error) {
